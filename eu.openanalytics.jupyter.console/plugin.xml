@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            delegate="eu.openanalytics.jupyter.console.launch.JupyterConsoleLaunchDelegate"
+            id="eu.openanalytics.jupyter.JupyterConsoleLaunchConfigType"
+            modes="run"
+            name="Jupyter Console">
+      </launchConfigurationType>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+      <launchConfigurationTabGroup
+            class="eu.openanalytics.jupyter.console.launch.JupyterConsoleTabGroup"
+            id="eu.openanalytics.jupyter.JupyterConsoleLaunchTabGroup"
+            type="eu.openanalytics.jupyter.JupyterConsoleLaunchConfigType">
+      </launchConfigurationTabGroup>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+      <launchConfigurationTypeImage
+            configTypeID="eu.openanalytics.jupyter.JupyterConsoleLaunchConfigType"
+            icon="icons/jupyter-sq-16.png"
+            id="eu.openanalytics.jupyter.JupyterConsoleLaunchImages">
+      </launchConfigurationTypeImage>
+   </extension>
+
+</plugin>

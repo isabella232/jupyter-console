@@ -2,8 +2,8 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>eu.openanalytics.jupyter</groupId>
-	<artifactId>eu.openanalytics.jupyter.build</artifactId>
-	<packaging>pom</packaging>
+	<artifactId>eu.openanalytics.jupyter.p2repo</artifactId>
+	<packaging>eclipse-repository</packaging>
 	<version>1.0.0-SNAPSHOT</version>
 
 	<properties>
@@ -18,14 +18,7 @@
 			<layout>p2</layout>
 		</repository>
 	</repositories>
-	
-	<modules>
-		<module>../eu.openanalytics.jupyter</module>
-		<module>../eu.openanalytics.jupyter.console</module>
-		<module>../eu.openanalytics.jupyter.wsclient</module>
-		<module>../eu.openanalytics.jupyter.p2repo</module>
-	</modules>
-	
+
 	<build>
 		<plugins>
 			<plugin>

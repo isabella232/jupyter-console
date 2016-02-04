@@ -20,10 +20,10 @@
 	</repositories>
 	
 	<modules>
-		<module>../eu.openanalytics.jupyter</module>
-		<module>../eu.openanalytics.jupyter.console</module>
-		<module>../eu.openanalytics.jupyter.wsclient</module>
-		<module>../eu.openanalytics.jupyter.p2repo</module>
+		<module>eu.openanalytics.jupyter</module>
+		<module>eu.openanalytics.jupyter.console</module>
+		<module>eu.openanalytics.jupyter.wsclient</module>
+		<module>eu.openanalytics.jupyter.p2repo</module>
 	</modules>
 	
 	<build>

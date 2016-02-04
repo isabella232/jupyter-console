@@ -1,6 +1,9 @@
 package eu.openanalytics.jupyter.console;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
@@ -28,6 +31,7 @@ public class JupyterSession {
 	private ILaunchConfiguration configuration;
 	private SimpleStreamMonitor[] outputMonitors;
 	private EventMonitor eventMonitor;
+	private ExecutorService asyncResponseHandler;
 	
 	private String nbUrl;
 	private String kernelId;
@@ -41,6 +45,7 @@ public class JupyterSession {
 				new SimpleStreamMonitor(OUTPUT_CONTROL)
 		};
 		this.eventMonitor = new EventMonitor();
+		this.asyncResponseHandler = Executors.newFixedThreadPool(1);
 	}
 	
 	public void connect() throws IOException, CoreException {
@@ -61,21 +66,12 @@ public class JupyterSession {
 	}
 	
 	public void write(String input) throws IOException {
-		EvalResponse response = channel.eval(input);
-		String data = (response.data == null) ? "" : response.data;
-		if (response.isError) outputMonitors[1].append(data);
-		else outputMonitors[0].append(data);
+		Future<EvalResponse> response = channel.evalAsync(input);
+		asyncResponseHandler.submit(new ResponseReceiver(response));
 	}
 	
 	public void signal(Signal sig) throws IOException {
-		if (sig == Signal.StopSession) {
-			channel.close();
-			API.getKernelService().stopKernel(nbUrl, kernelId);
-			outputMonitors[2].append("Session stopped.");
-			for (SimpleStreamMonitor outputMonitor: outputMonitors) outputMonitor.dispose();
-			eventMonitor.post(new SessionEvent(EventType.SessionStopped, null));
-			eventMonitor.dispose();
-		}
+		if (sig == Signal.StopSession) stopSession();
 	}
 	
 	public void addStreamListener(IStreamListener listener) {
@@ -88,5 +84,36 @@ public class JupyterSession {
 	
 	public EventMonitor getEventMonitor() {
 		return eventMonitor;
+	}
+	
+	private void stopSession() throws IOException {
+		channel.close();
+		API.getKernelService().stopKernel(nbUrl, kernelId);
+		outputMonitors[2].append("Session stopped.");
+		for (SimpleStreamMonitor outputMonitor: outputMonitors) outputMonitor.dispose();
+		eventMonitor.post(new SessionEvent(EventType.SessionStopped, null));
+		eventMonitor.dispose();
+		asyncResponseHandler.shutdown();
+	}
+	
+	private class ResponseReceiver implements Runnable {
+		
+		private Future<EvalResponse> futureResponse;
+		
+		public ResponseReceiver(Future<EvalResponse> futureResponse) {
+			this.futureResponse = futureResponse;
+		}
+		
+		@Override
+		public void run() {
+			try {
+				EvalResponse response = futureResponse.get();
+				String data = (response.data == null) ? "" : response.data;
+				if (response.isError) outputMonitors[1].append(data);
+				else outputMonitors[0].append(data);
+			} catch (Exception e) {
+				outputMonitors[1].append("Socket I/O error: " + e.getMessage());
+			}
+		}
 	}
 }

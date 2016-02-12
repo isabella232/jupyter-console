@@ -24,6 +24,10 @@ public class JupyterSession {
 	public static final String CONNECTION_URL = "CONNECTION_URL";
 	public static final String KERNEL_NAME = "KERNEL_NAME";
 	
+	public static final String DEFAULT_CONNECTION_METHOD = "tmpnb";
+	public static final String DEFAULT_CONNECTION_URL = "http://tmpnb.openanalytics.eu:8000";
+	public static final String DEFAULT_KERNEL_NAME = "python3";
+	
 	public static final String OUTPUT_STDOUT = "stdout";
 	public static final String OUTPUT_STDERR = "stderr";
 	public static final String OUTPUT_CONTROL = "control";
@@ -52,7 +56,7 @@ public class JupyterSession {
 		String baseUrl = configuration.getAttribute(CONNECTION_URL, "");
 		String kernelName = configuration.getAttribute(KERNEL_NAME, "");
 		
-		nbUrl = API.getNotebookService().spawn(baseUrl);
+		nbUrl = API.getNotebookService().getNotebook(baseUrl);
 		outputMonitors[2].append("Notebook server spawned: " + nbUrl);
 		
 		kernelId = API.getKernelService().launchKernel(nbUrl, kernelName);

@@ -1,39 +1,33 @@
 package eu.openanalytics.jupyter.wsclient;
 
-import static eu.openanalytics.japyter.Japyter.JSON_OBJECT_MAPPER;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import eu.openanalytics.japyter.Japyter;
 import eu.openanalytics.japyter.client.Protocol;
-import eu.openanalytics.japyter.client.Protocol.BroadcastType;
 import eu.openanalytics.japyter.client.Protocol.RequestMessageType;
-import eu.openanalytics.japyter.model.gen.Broadcast;
-import eu.openanalytics.japyter.model.gen.Data_;
-import eu.openanalytics.japyter.model.gen.Error;
-import eu.openanalytics.japyter.model.gen.ExecuteReply;
 import eu.openanalytics.japyter.model.gen.ExecuteRequest;
-import eu.openanalytics.japyter.model.gen.ExecuteResult;
-import eu.openanalytics.japyter.model.gen.Reply;
 import eu.openanalytics.japyter.model.gen.Request;
 import eu.openanalytics.jupyter.wsclient.internal.Channel;
 import eu.openanalytics.jupyter.wsclient.internal.Message;
+import eu.openanalytics.jupyter.wsclient.internal.ReplyProcessor;
 
 public class WebSocketChannel implements Closeable {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketChannel.class);
+	
 	private String url;
 	private WebSocketClient client;
 	private WebSocketIO socketIO;
@@ -58,38 +52,27 @@ public class WebSocketChannel implements Closeable {
 	public void close() throws IOException {
 		try {
 			client.stop();
+			socketIO = null;
 		} catch (Exception e) {
 			throw new IOException("Failed to close websocket", e);
 		}
 	}
 
-	public Future<EvalResponse> evalAsync(String code) throws IOException {
+	public Future<EvalResponse> eval(String code) throws IOException {
 		if (socketIO == null) throw new IOException("Websocket is not ready");
 		return socketIO.submit(code);
 	}
 	
-	public static class EvalResponse {
-		
-		public String data;
-		public boolean isError;
-		
-		public EvalResponse(String data, boolean isError) {
-			this.data = data;
-			this.isError = isError;
-		}
-	}
-	
-	//TODO Proper support for mixed/queued submissions
 	private class WebSocketIO implements WebSocketListener {
 
 		private Session session;
 		private String sessionId;
 		private String userName;
-		private Semaphore locker;
-		private EvalResponse response;
+		
+		private Map<String, ReplyProcessor> replyProcessors;
 		
 		public WebSocketIO() {
-			locker = new Semaphore(0);
+			replyProcessors = new ConcurrentHashMap<>();
 			// These must not be null, or JSON parsing will fail!
 			sessionId = UUID.randomUUID().toString();
 			userName = "username";
@@ -103,6 +86,7 @@ public class WebSocketChannel implements Closeable {
 		@Override
 		public void onWebSocketClose(int statusCode, String reason) {
 			this.session = null;
+			this.replyProcessors.clear();
 		}
 
 		@Override
@@ -112,44 +96,32 @@ public class WebSocketChannel implements Closeable {
 
 		@Override
 		public void onWebSocketError(Throwable cause) {
-			cause.printStackTrace(System.err);
+			LOGGER.error("Websocket closed unexpectedly", cause);
+			for (ReplyProcessor processor: replyProcessors.values()) {
+				processor.handleError(cause);
+			}
+			replyProcessors.clear();
 		}
 
 		@Override
 		public void onWebSocketText(String message) {
 			try {
 				Message msg = Japyter.JSON_OBJECT_MAPPER.readValue(message, Message.class);
-				
-				if (msg.getChannel() == Channel.IOPub) {
-					Class<? extends Broadcast> bcClass = BroadcastType.classFromValue(msg.getHeader().getMsgType());
-					Broadcast bc = JSON_OBJECT_MAPPER.convertValue(msg.getContent(), bcClass);
-					if (bc instanceof ExecuteResult) {
-						Data_ data = ((ExecuteResult) bc).getData();
-						Object retVal = data.getAdditionalProperties().get("text/plain");
-						response = new EvalResponse(retVal == null ? "" : retVal.toString(), false);
-					} else if (bc instanceof Error) {
-						response = new EvalResponse(((Error) bc).getEvalue(), true);
-					}
-				} else if (msg.getChannel() == Channel.Shell) {
-					Class<? extends Reply> replyClass = null;
-					for (RequestMessageType t: RequestMessageType.values()) {
-						if (t.getReplyMessageType().toString().equals(msg.getHeader().getMsgType())) replyClass = t.getReplyContentClass();
-					}
-					Reply reply = JSON_OBJECT_MAPPER.convertValue(msg.getContent(), replyClass);
-					if (reply instanceof ExecuteReply) {
-						if (response == null) {
-							ExecuteReply.Status status = ((ExecuteReply) reply).getStatus();
-							if (status == ExecuteReply.Status.OK) {
-								response = new EvalResponse(null, false);
-							} else {
-								response = new EvalResponse("Status: " + status, true);
-							}
-						}
-						locker.release();
-					}
+				String msgId = msg.getParentHeader().getMsgId();
+				ReplyProcessor processor = replyProcessors.get(msgId);
+				if (processor == null) {
+					LOGGER.warn("Ignored reply to unknown message id " + msgId + ": " + msg.toString());
+					return;
+				} else {
+					processor.handle(msg);
+					if (processor.isComplete()) replyProcessors.remove(msgId);
 				}
 			} catch (IOException e) {
-				response = new EvalResponse("Failed to read reply: " + e.getMessage(), true);
+				LOGGER.error("Failed to process message", e);
+				for (ReplyProcessor processor: replyProcessors.values()) {
+					processor.handleError(e);
+				}
+				replyProcessors.clear();
 			}
 		}
 		
@@ -164,46 +136,10 @@ public class WebSocketChannel implements Closeable {
 			
 			String msg = Japyter.JSON_OBJECT_MAPPER.writeValueAsString(message);
 			session.getRemote().sendString(msg);
-			return new ResponseFuture();
-		}
-		
-		private class ResponseFuture implements Future<EvalResponse> {
 			
-			private boolean done = false;
-			
-			@Override
-			public boolean isDone() {
-				return done;
-			}
-			
-			@Override
-			public boolean isCancelled() {
-				return false;
-			}
-			
-			@Override
-			public boolean cancel(boolean mayInterruptIfRunning) {
-				return false;
-			}
-			
-			@Override
-			public EvalResponse get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-				if (locker.tryAcquire(timeout, unit)) return doGet();
-				else return null;
-			}
-			
-			@Override
-			public EvalResponse get() throws InterruptedException, ExecutionException {
-				locker.acquire();
-				return doGet();
-			}
-			
-			private EvalResponse doGet() {
-				done = true;
-				EvalResponse res = response;
-				response = null;
-				return res;
-			}
+			ReplyProcessor replyProcessor = new ReplyProcessor(message, request);
+			replyProcessors.put(message.getHeader().getMsgId(), replyProcessor);
+			return replyProcessor.getFuture();
 		}
 	}
 }

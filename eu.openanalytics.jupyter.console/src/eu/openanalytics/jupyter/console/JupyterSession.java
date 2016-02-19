@@ -15,9 +15,9 @@ import eu.openanalytics.jupyter.console.io.SessionEvent;
 import eu.openanalytics.jupyter.console.io.Signal;
 import eu.openanalytics.jupyter.console.io.SimpleStreamMonitor;
 import eu.openanalytics.jupyter.wsclient.API;
+import eu.openanalytics.jupyter.wsclient.EvalResponse;
 import eu.openanalytics.jupyter.wsclient.KernelService.KernelSpec;
 import eu.openanalytics.jupyter.wsclient.WebSocketChannel;
-import eu.openanalytics.jupyter.wsclient.WebSocketChannel.EvalResponse;
 
 public class JupyterSession {
 
@@ -77,7 +77,7 @@ public class JupyterSession {
 	}
 	
 	public void write(String input) throws IOException {
-		Future<EvalResponse> response = channel.evalAsync(input);
+		Future<EvalResponse> response = channel.eval(input);
 		asyncResponseHandler.submit(new ResponseReceiver(response));
 	}
 	

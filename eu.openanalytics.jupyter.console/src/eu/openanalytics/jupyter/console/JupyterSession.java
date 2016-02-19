@@ -15,6 +15,7 @@ import eu.openanalytics.jupyter.console.io.SessionEvent;
 import eu.openanalytics.jupyter.console.io.Signal;
 import eu.openanalytics.jupyter.console.io.SimpleStreamMonitor;
 import eu.openanalytics.jupyter.wsclient.API;
+import eu.openanalytics.jupyter.wsclient.KernelService.KernelSpec;
 import eu.openanalytics.jupyter.wsclient.WebSocketChannel;
 import eu.openanalytics.jupyter.wsclient.WebSocketChannel.EvalResponse;
 
@@ -39,6 +40,7 @@ public class JupyterSession {
 	
 	private String nbUrl;
 	private String kernelId;
+	private KernelSpec kernelSpec;
 	private WebSocketChannel channel;
 	
 	public JupyterSession(ILaunchConfiguration configuration) {
@@ -59,14 +61,19 @@ public class JupyterSession {
 		nbUrl = API.getNotebookService().getNotebook(baseUrl);
 		outputMonitors[2].append("Notebook server spawned: " + nbUrl);
 		
+		kernelSpec = API.getKernelService().getKernelSpec(nbUrl, kernelName);
 		kernelId = API.getKernelService().launchKernel(nbUrl, kernelName);
-		outputMonitors[2].append("Kernel launched: " + kernelName + ", id: " + kernelId);
+		outputMonitors[2].append(kernelSpec.displayName + " kernel launched, id: " + kernelId);
 		
 		channel = API.getKernelService().createChannel(nbUrl, kernelId);
 		channel.connect();
 		outputMonitors[2].append("Session started. Enjoy!");
 		
 		eventMonitor.post(new SessionEvent(EventType.SessionStarted, null));
+	}
+	
+	public KernelSpec getKernelSpec() {
+		return kernelSpec;
 	}
 	
 	public void write(String input) throws IOException {
@@ -89,6 +96,11 @@ public class JupyterSession {
 	public EventMonitor getEventMonitor() {
 		return eventMonitor;
 	}
+	
+	/*
+	 * Non-public
+	 * **********
+	 */
 	
 	private void stopSession() throws IOException {
 		channel.close();

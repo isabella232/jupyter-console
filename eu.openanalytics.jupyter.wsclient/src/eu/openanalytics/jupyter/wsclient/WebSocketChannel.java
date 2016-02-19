@@ -1,9 +1,10 @@
 package eu.openanalytics.jupyter.wsclient;
 
+import static eu.openanalytics.japyter.Japyter.JSON_OBJECT_MAPPER;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -16,7 +17,20 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
-import eu.openanalytics.jupyter.wsclient.util.JSONUtil;
+import eu.openanalytics.japyter.Japyter;
+import eu.openanalytics.japyter.client.Protocol;
+import eu.openanalytics.japyter.client.Protocol.BroadcastType;
+import eu.openanalytics.japyter.client.Protocol.RequestMessageType;
+import eu.openanalytics.japyter.model.gen.Broadcast;
+import eu.openanalytics.japyter.model.gen.Data_;
+import eu.openanalytics.japyter.model.gen.Error;
+import eu.openanalytics.japyter.model.gen.ExecuteReply;
+import eu.openanalytics.japyter.model.gen.ExecuteRequest;
+import eu.openanalytics.japyter.model.gen.ExecuteResult;
+import eu.openanalytics.japyter.model.gen.Reply;
+import eu.openanalytics.japyter.model.gen.Request;
+import eu.openanalytics.jupyter.wsclient.internal.Channel;
+import eu.openanalytics.jupyter.wsclient.internal.Message;
 
 public class WebSocketChannel implements Closeable {
 
@@ -48,15 +62,10 @@ public class WebSocketChannel implements Closeable {
 			throw new IOException("Failed to close websocket", e);
 		}
 	}
-	
-	public EvalResponse eval(String code) throws IOException {
-		if (socketIO == null) throw new IOException("Websocket is not ready");
-		return socketIO.submitSync(code);
-	}
-	
+
 	public Future<EvalResponse> evalAsync(String code) throws IOException {
 		if (socketIO == null) throw new IOException("Websocket is not ready");
-		return socketIO.submitAsync(code);
+		return socketIO.submit(code);
 	}
 	
 	public static class EvalResponse {
@@ -70,16 +79,20 @@ public class WebSocketChannel implements Closeable {
 		}
 	}
 	
-	//TODO Reuse the Japyter protocol here
 	//TODO Proper support for mixed/queued submissions
 	private class WebSocketIO implements WebSocketListener {
 
 		private Session session;
+		private String sessionId;
+		private String userName;
 		private Semaphore locker;
 		private EvalResponse response;
 		
 		public WebSocketIO() {
 			locker = new Semaphore(0);
+			// These must not be null, or JSON parsing will fail!
+			sessionId = UUID.randomUUID().toString();
+			userName = "username";
 		}
 		
 		@Override
@@ -102,48 +115,56 @@ public class WebSocketChannel implements Closeable {
 			cause.printStackTrace(System.err);
 		}
 
-		@SuppressWarnings("unchecked")
 		@Override
 		public void onWebSocketText(String message) {
-			Map<String, Object> map = JSONUtil.toMap(message);
-			String channel = map.get("channel").toString();
-			String msgType =  map.get("msg_type").toString();
-			if (channel.equals("iopub") && msgType.equals("execute_result")) {
-				Map<String, Object> data = (Map<String, Object>) ((Map<String, Object>) map.get("content")).get("data");
-				response = new EvalResponse(data.get("text/plain").toString(), false);
-			} else if (channel.equals("iopub") && msgType.equals("error")) {
-				response = new EvalResponse(((Map<String, Object>) map.get("content")).get("evalue").toString(), true);
-			} else if (channel.equals("shell") && msgType.equals("execute_reply")) {
-				String status = ((Map<String, Object>) map.get("content")).get("status").toString();
-				if (response == null) {
-					if (status.equals("ok")) response = new EvalResponse(null, false);
-					else response = new EvalResponse("Status: " + status, true);
-				}
-				locker.release();
-			}
-		}
-		
-		public EvalResponse submitSync(String code) throws IOException {
 			try {
-				return submitAsync(code).get();
-			} catch (InterruptedException e) {
-				throw new IOException("Interrupted while waiting for response", e);
-			} catch (ExecutionException e) {
-				throw new IOException("Failed to receive response", e);
+				Message msg = Japyter.JSON_OBJECT_MAPPER.readValue(message, Message.class);
+				
+				if (msg.getChannel() == Channel.IOPub) {
+					Class<? extends Broadcast> bcClass = BroadcastType.classFromValue(msg.getHeader().getMsgType());
+					Broadcast bc = JSON_OBJECT_MAPPER.convertValue(msg.getContent(), bcClass);
+					if (bc instanceof ExecuteResult) {
+						Data_ data = ((ExecuteResult) bc).getData();
+						Object retVal = data.getAdditionalProperties().get("text/plain");
+						response = new EvalResponse(retVal == null ? "" : retVal.toString(), false);
+					} else if (bc instanceof Error) {
+						response = new EvalResponse(((Error) bc).getEvalue(), true);
+					}
+				} else if (msg.getChannel() == Channel.Shell) {
+					Class<? extends Reply> replyClass = null;
+					for (RequestMessageType t: RequestMessageType.values()) {
+						if (t.getReplyMessageType().toString().equals(msg.getHeader().getMsgType())) replyClass = t.getReplyContentClass();
+					}
+					Reply reply = JSON_OBJECT_MAPPER.convertValue(msg.getContent(), replyClass);
+					if (reply instanceof ExecuteReply) {
+						if (response == null) {
+							ExecuteReply.Status status = ((ExecuteReply) reply).getStatus();
+							if (status == ExecuteReply.Status.OK) {
+								response = new EvalResponse(null, false);
+							} else {
+								response = new EvalResponse("Status: " + status, true);
+							}
+						}
+						locker.release();
+					}
+				}
+			} catch (IOException e) {
+				response = new EvalResponse("Failed to read reply: " + e.getMessage(), true);
 			}
 		}
 		
-		public Future<EvalResponse> submitAsync(String code) throws IOException {
-			String msg = createExecRequestMessage(code);
+		public Future<EvalResponse> submit(String code) throws IOException {
+			Request request = new ExecuteRequest().withCode(code);
+			RequestMessageType requestMessageType = RequestMessageType.fromRequestContentClass(request.getClass());
+			
+			Message message = new Message(Channel.Shell, requestMessageType).withContent(request);
+			if (sessionId != null) message.getHeader().setSession(sessionId);
+			if (userName != null) message.getHeader().setUsername(userName);
+			message.getHeader().setVersion(Protocol.VERSION);
+			
+			String msg = Japyter.JSON_OBJECT_MAPPER.writeValueAsString(message);
 			session.getRemote().sendString(msg);
 			return new ResponseFuture();
-		}
-		
-		private String createExecRequestMessage(String code) {
-			return "{\"metadata\":{},"
-					+ "\"content\":{\"code\":\"" + code + "\",\"silent\":false},"
-					+ "\"header\":{\"msg_id\":\"japyter." + UUID.randomUUID().toString() + "\",\"msg_type\":\"execute_request\"},"
-					+ "\"parent_header\":{}}";
 		}
 		
 		private class ResponseFuture implements Future<EvalResponse> {

@@ -96,7 +96,7 @@ public class JupyterConsole extends IOConsole {
 				ConsoleUtil.inUIThread(new Runnable() {
 					public void run() {
 						if (type == EventType.SessionStarted) {
-							setName(CONSOLE_NAME + " <running>");
+							setName(CONSOLE_NAME + " <running " + JupyterConsole.this.session.getKernelSpec().displayName + " kernel>");
 						} else if (type == EventType.SessionStopped) {
 							setName(CONSOLE_NAME + " <terminated>");
 						}						

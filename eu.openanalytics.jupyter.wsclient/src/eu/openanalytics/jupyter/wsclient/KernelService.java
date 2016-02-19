@@ -41,6 +41,14 @@ public class KernelService {
 		return specs.toArray(new KernelSpec[specs.size()]);
 	}
 	
+	public KernelSpec getKernelSpec(String baseUrl, String kernelName) throws IOException {
+		KernelSpec[] specs = listAvailableKernels(baseUrl);
+		for (KernelSpec spec: specs) {
+			if (spec.name.equals(kernelName)) return spec;
+		}
+		return null;
+	}
+	
 	public String launchKernel(String baseUrl, String kernelName) throws IOException {
 		String url = HTTPUtil.concat(baseUrl, KERNEL_SERVICE_URL);
 		String body = (kernelName == null) ? null : JSONUtil.toJSON("name", kernelName);

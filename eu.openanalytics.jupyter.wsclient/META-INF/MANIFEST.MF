@@ -18,5 +18,12 @@ Bundle-ClassPath: lib/jetty-io-9.3.7.v20160115.jar,
  lib/gson-2.5.jar,
  lib/httpclient-4.5.1.jar,
  lib/httpcore-4.4.3.jar,
+ lib/japyter-1.0-SNAPSHOT.jar,
+ lib/jackson-annotations-2.5.0.jar,
+ lib/jackson-core-2.5.3.jar,
+ lib/jackson-databind-2.5.3.jar,
+ lib/commons-lang3-3.4.jar,
+ lib/slf4j-api-1.7.12.jar,
+ lib/slf4j-simple-1.7.12.jar,
  .
 Export-Package: eu.openanalytics.jupyter.wsclient

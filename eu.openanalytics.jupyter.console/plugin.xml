@@ -26,5 +26,14 @@
             id="eu.openanalytics.jupyter.JupyterConsoleLaunchImages">
       </launchConfigurationTypeImage>
    </extension>
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            class="eu.openanalytics.jupyter.console.view.GraphicsView"
+            id="eu.openanalytics.jupyter.console.view.GraphicsView"
+            name="Jupyter Graphics"
+            restorable="true">
+      </view>
+   </extension>
 
 </plugin>

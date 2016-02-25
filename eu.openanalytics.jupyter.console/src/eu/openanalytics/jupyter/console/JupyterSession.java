@@ -8,12 +8,15 @@ import java.util.concurrent.Future;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.IStreamListener;
+import org.eclipse.swt.graphics.ImageData;
 
 import eu.openanalytics.jupyter.console.io.EventMonitor;
 import eu.openanalytics.jupyter.console.io.EventType;
 import eu.openanalytics.jupyter.console.io.SessionEvent;
 import eu.openanalytics.jupyter.console.io.Signal;
 import eu.openanalytics.jupyter.console.io.SimpleStreamMonitor;
+import eu.openanalytics.jupyter.console.util.ImageUtil;
+import eu.openanalytics.jupyter.console.view.GraphicsView;
 import eu.openanalytics.jupyter.wsclient.API;
 import eu.openanalytics.jupyter.wsclient.EvalResponse;
 import eu.openanalytics.jupyter.wsclient.KernelService.KernelSpec;
@@ -124,11 +127,18 @@ public class JupyterSession {
 		public void run() {
 			try {
 				EvalResponse response = futureResponse.get();
-				String data = (response.data == null) ? "" : response.data;
-				if (response.isError) outputMonitors[1].append(data);
-				else outputMonitors[0].append(data);
+				
+				String text = (String) response.getValue("text/plain");
+				if (text != null) {
+					outputMonitors[(response.isError()) ? 1 : 0].append(text);
+				}
+				
+				ImageData imageData = ImageUtil.getImage(response);
+				if (imageData != null) {
+					GraphicsView.openWith(imageData);
+				}
 			} catch (Exception e) {
-				outputMonitors[1].append("Socket I/O error: " + e.getMessage());
+				outputMonitors[1].append("Error handling response: " + e.getMessage());
 			}
 		}
 	}

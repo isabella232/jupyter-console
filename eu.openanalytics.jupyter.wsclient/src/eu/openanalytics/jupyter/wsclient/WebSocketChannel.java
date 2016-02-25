@@ -1,5 +1,7 @@
 package eu.openanalytics.jupyter.wsclient;
 
+import static eu.openanalytics.japyter.Japyter.JSON_OBJECT_MAPPER;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
@@ -15,11 +17,14 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+
 import eu.openanalytics.japyter.Japyter;
 import eu.openanalytics.japyter.client.Protocol;
 import eu.openanalytics.japyter.client.Protocol.RequestMessageType;
 import eu.openanalytics.japyter.model.gen.ExecuteRequest;
 import eu.openanalytics.japyter.model.gen.Request;
+import eu.openanalytics.japyter.model.gen.UserExpressions;
 import eu.openanalytics.jupyter.wsclient.internal.Channel;
 import eu.openanalytics.jupyter.wsclient.internal.Message;
 import eu.openanalytics.jupyter.wsclient.internal.ReplyProcessor;
@@ -31,6 +36,12 @@ public class WebSocketChannel implements Closeable {
 	private String url;
 	private WebSocketClient client;
 	private WebSocketIO socketIO;
+	
+	static {
+		JSON_OBJECT_MAPPER
+			.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
+			.configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
+	}
 	
 	public WebSocketChannel(String url) {
 		this.url = url;
@@ -105,6 +116,8 @@ public class WebSocketChannel implements Closeable {
 
 		@Override
 		public void onWebSocketText(String message) {
+			//TODO
+			System.out.println(message);
 			try {
 				Message msg = Japyter.JSON_OBJECT_MAPPER.readValue(message, Message.class);
 				String msgId = msg.getParentHeader().getMsgId();
@@ -126,7 +139,7 @@ public class WebSocketChannel implements Closeable {
 		}
 		
 		public Future<EvalResponse> submit(String code) throws IOException {
-			Request request = new ExecuteRequest().withCode(code);
+			Request request = new ExecuteRequest().withCode(code).withUserExpressions(new UserExpressions());
 			RequestMessageType requestMessageType = RequestMessageType.fromRequestContentClass(request.getClass());
 			
 			Message message = new Message(Channel.Shell, requestMessageType).withContent(request);

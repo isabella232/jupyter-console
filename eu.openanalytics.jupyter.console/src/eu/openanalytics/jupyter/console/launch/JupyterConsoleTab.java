@@ -22,7 +22,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import eu.openanalytics.jupyter.console.JupyterSession;
-import eu.openanalytics.jupyter.console.util.ErrorUtil;
+import eu.openanalytics.jupyter.console.util.LogUtil;
 import eu.openanalytics.jupyter.console.util.SelectKernelDialog;
 import eu.openanalytics.jupyter.wsclient.API;
 import eu.openanalytics.jupyter.wsclient.KernelService.KernelSpec;
@@ -95,7 +95,7 @@ public class JupyterConsoleTab extends AbstractLaunchConfigurationTab {
 			connectionUrlTxt.setText(connectionUrl);
 			kernelNameTxt.setText(kernelName);
 		} catch (CoreException e) {
-			ErrorUtil.showError("Error initializing page", e.getMessage(), e);
+			LogUtil.showError("Error initializing page", e.getMessage(), e);
 		}
 	}
 
@@ -130,7 +130,7 @@ public class JupyterConsoleTab extends AbstractLaunchConfigurationTab {
 				updateLaunchConfigurationDialog();
 			}
 		} catch (IOException e) {
-			ErrorUtil.showError("Error selecting kernel spec", e.getMessage(), e);
+			LogUtil.showError("Error selecting kernel spec", e.getMessage(), e);
 		}
 	}
 }

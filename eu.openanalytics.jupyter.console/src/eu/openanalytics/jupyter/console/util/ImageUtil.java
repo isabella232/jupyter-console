@@ -6,8 +6,8 @@ import java.awt.image.DataBufferInt;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Base64;
 
+import org.eclipse.core.internal.preferences.Base64;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
@@ -22,6 +22,7 @@ import com.kitfox.svg.SVGException;
 
 import eu.openanalytics.jupyter.wsclient.EvalResponse;
 
+@SuppressWarnings("restriction")
 public class ImageUtil {
 
 	public static ImageData getImage(EvalResponse response) throws IOException {
@@ -30,7 +31,7 @@ public class ImageUtil {
 		
 		value = (String) response.getValue("image/png");
 		if (value != null) {
-			byte[] bytes = Base64.getDecoder().decode(value);
+			byte[] bytes = Base64.decode(value.getBytes("UTF-8"));
 			ImageData[] datas = new ImageLoader().load(new ByteArrayInputStream(bytes));
 			if (datas != null && datas.length > 0) return datas[0];
 		}

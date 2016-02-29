@@ -13,7 +13,6 @@ import org.eclipse.swt.graphics.ImageData;
 import eu.openanalytics.jupyter.console.io.EventMonitor;
 import eu.openanalytics.jupyter.console.io.EventType;
 import eu.openanalytics.jupyter.console.io.SessionEvent;
-import eu.openanalytics.jupyter.console.io.Signal;
 import eu.openanalytics.jupyter.console.io.SimpleStreamMonitor;
 import eu.openanalytics.jupyter.console.util.ImageUtil;
 import eu.openanalytics.jupyter.console.view.GraphicsView;
@@ -84,8 +83,8 @@ public class JupyterSession {
 		asyncResponseHandler.submit(new ResponseReceiver(response));
 	}
 	
-	public void signal(Signal sig) throws IOException {
-		if (sig == Signal.StopSession) stopSession();
+	public void stop() throws IOException {
+		stopSession();
 	}
 	
 	public void addStreamListener(IStreamListener listener) {
@@ -127,15 +126,11 @@ public class JupyterSession {
 		public void run() {
 			try {
 				EvalResponse response = futureResponse.get();
-				
-				String text = (String) response.getValue("text/plain");
-				if (text != null) {
-					outputMonitors[(response.isError()) ? 1 : 0].append(text);
-				}
-				
 				ImageData imageData = ImageUtil.getImage(response);
-				if (imageData != null) {
-					GraphicsView.openWith(imageData);
+				if (imageData != null) GraphicsView.openWith(imageData);
+				else {
+					String text = (String) response.getValue("text/plain");
+					if (text != null) outputMonitors[(response.isError()) ? 1 : 0].append(text);
 				}
 			} catch (Exception e) {
 				outputMonitors[1].append("Error handling response: " + e.getMessage());

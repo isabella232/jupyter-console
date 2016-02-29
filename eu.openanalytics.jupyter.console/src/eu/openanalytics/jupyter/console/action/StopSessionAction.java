@@ -15,7 +15,6 @@ import eu.openanalytics.jupyter.console.JupyterConsole;
 import eu.openanalytics.jupyter.console.io.EventType;
 import eu.openanalytics.jupyter.console.io.IEventListener;
 import eu.openanalytics.jupyter.console.io.SessionEvent;
-import eu.openanalytics.jupyter.console.io.Signal;
 
 public class StopSessionAction extends Action {
 
@@ -46,9 +45,9 @@ public class StopSessionAction extends Action {
 	@Override
 	public void run() {
 		try {
-			console.getSession().signal(Signal.StopSession);
+			console.getSession().stop();
 		} catch (IOException e) {
-			Activator.getDefault().getLog().log(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Failed to send signal " + Signal.StopSession, e));
+			Activator.getDefault().getLog().log(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Failed to stop session", e));
 		}
 	}
 

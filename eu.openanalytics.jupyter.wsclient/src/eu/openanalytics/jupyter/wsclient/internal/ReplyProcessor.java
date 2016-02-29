@@ -2,6 +2,7 @@ package eu.openanalytics.jupyter.wsclient.internal;
 
 import static eu.openanalytics.japyter.Japyter.JSON_OBJECT_MAPPER;
 
+import java.util.Map;
 import java.util.concurrent.Future;
 
 import eu.openanalytics.japyter.client.Protocol.BroadcastType;
@@ -40,19 +41,15 @@ public class ReplyProcessor {
 			Broadcast bc = JSON_OBJECT_MAPPER.convertValue(msg.getContent(), bcClass);
 			if (bc instanceof ExecuteResult) {
 				Data_ data = ((ExecuteResult) bc).getData();
-				for (String mimetype: data.getAdditionalProperties().keySet()) {
-					response.addValue(mimetype, data.getAdditionalProperties().get(mimetype));
-				}
+				addValues(data.getAdditionalProperties());
 			} else if (bc instanceof DisplayData) {
 				Data data = ((DisplayData) bc).getData();
-				for (String mimetype: data.getAdditionalProperties().keySet()) {
-					response.addValue(mimetype, data.getAdditionalProperties().get(mimetype));
-				}
+				addValues(data.getAdditionalProperties());
 			} else if (bc instanceof Stream) {
 				String text = ((Stream) bc).getText();
 				streamingText.append(text);
 			} else if (bc instanceof Error) {
-				response = new EvalResponse(((Error) bc).getEvalue(), MIMETYPE_TEXT, true);
+				addError(((Error) bc).getEvalue());
 			}
 		} else if (msg.getChannel() == Channel.Shell) {
 			Class<? extends Reply> replyClass = null;
@@ -61,14 +58,11 @@ public class ReplyProcessor {
 			}
 			Reply reply = JSON_OBJECT_MAPPER.convertValue(msg.getContent(), replyClass);
 			if (reply instanceof ExecuteReply) {
-				if (response == null) {
-					ExecuteReply.Status status = ((ExecuteReply) reply).getStatus();
-					if (status == ExecuteReply.Status.OK) {
-						if (streamingText.length() == 0) streamingText.append("Ok");
-						response = new EvalResponse(streamingText.toString(), MIMETYPE_TEXT, false);
-					} else {
-						response = new EvalResponse(((ExecuteReply) reply).getEvalue(), MIMETYPE_TEXT, true);
-					}
+				ExecuteReply.Status status = ((ExecuteReply) reply).getStatus();
+				if (status == ExecuteReply.Status.OK) {
+					if (streamingText.length() > 0) response.addValue(MIMETYPE_TEXT, streamingText.toString());
+				} else {
+					addError(((ExecuteReply) reply).getEvalue());
 				}
 				future.setResponse(response);
 				complete = true;
@@ -87,5 +81,17 @@ public class ReplyProcessor {
 	
 	public boolean isComplete() {
 		return complete;
+	}
+	
+	private void addValues(Map<String, Object> map) {
+		for (String key: map.keySet()) {
+			response.addValue(key, map.get(key));
+		}
+	}
+	
+	private void addError(String evalue) {
+		if (evalue != null && evalue.endsWith("\n")) evalue = evalue.substring(0, evalue.length() - 1);
+		response.addValue(MIMETYPE_TEXT, evalue);
+		response.setError(true);
 	}
 }

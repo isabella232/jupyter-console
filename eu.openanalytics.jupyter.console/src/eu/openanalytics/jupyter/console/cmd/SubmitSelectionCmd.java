@@ -12,6 +12,8 @@ import java.io.IOException;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
@@ -23,6 +25,7 @@ import org.eclipse.ui.console.IConsole;
 import eu.openanalytics.jupyter.console.JupyterConsole;
 import eu.openanalytics.jupyter.console.util.ConsoleUtil;
 import eu.openanalytics.jupyter.console.util.LogUtil;
+import eu.openanalytics.jupyter.console.util.ReflectionUtils;
 
 public class SubmitSelectionCmd extends AbstractHandler {
 
@@ -39,7 +42,22 @@ public class SubmitSelectionCmd extends AbstractHandler {
 		}
 		String text = null;
 		if (selection instanceof TextSelection) {
-			text = ((TextSelection) selection).getText();
+			TextSelection textSelection = (TextSelection) selection;
+			if (textSelection.getLength() == 0) {
+				IDocument doc = (IDocument) ReflectionUtils.invoke("getDocument", textSelection);
+				if (doc != null) {
+					try {
+						int lineNr = textSelection.getStartLine();
+						int offset = doc.getLineOffset(lineNr);
+						text = doc.get(offset, doc.getLineLength(lineNr));
+						if (text.endsWith("\n")) text = text.substring(0, text.length() - 1);
+					} catch (BadLocationException e) {
+						// Failed to retrieve the document's line.
+					}
+				}
+			} else {
+				text = textSelection.getText();
+			}
 		}
 
 		// Submit the text to the active console

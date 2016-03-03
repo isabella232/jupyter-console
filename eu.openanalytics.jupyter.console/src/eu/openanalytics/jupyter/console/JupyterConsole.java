@@ -143,7 +143,7 @@ public class JupyterConsole extends IOConsole {
 				if (running) {
 					String state = busy ? "working" : "ready";
 					String kernelName = JupyterConsole.this.session.getKernelSpec().displayName;
-					setName(CONSOLE_NAME + " <running " + kernelName + "> <" + state + ">");
+					setName(CONSOLE_NAME + " <" + kernelName + "> <" + state + ">");
 				} else {
 					setName(CONSOLE_NAME + " <terminated>");
 				}						

@@ -7,12 +7,14 @@ import org.eclipse.ui.console.IConsoleView;
 import org.eclipse.ui.console.TextConsole;
 import org.eclipse.ui.internal.console.IOConsolePage;
 
+import eu.openanalytics.jupyter.console.action.RemoveLaunchAction;
 import eu.openanalytics.jupyter.console.action.StopSessionAction;
 
 @SuppressWarnings("restriction")
 public class JupyterConsolePage extends IOConsolePage {
 
 	private StopSessionAction stopSessionAction;
+	private RemoveLaunchAction removeLaunchAction;
 	
 	public JupyterConsolePage(TextConsole console, IConsoleView view) {
 		super(console, view);
@@ -22,6 +24,7 @@ public class JupyterConsolePage extends IOConsolePage {
 	protected void createActions() {
 		super.createActions();
 		stopSessionAction = new StopSessionAction(getConsole());
+		removeLaunchAction = new RemoveLaunchAction(getConsole());
 	}
 	
 	@Override
@@ -30,11 +33,13 @@ public class JupyterConsolePage extends IOConsolePage {
         String groupId = "JUPYTER";
         mgr.insertBefore(IConsoleConstants.OUTPUT_GROUP, new Separator(groupId));
         mgr.appendToGroup(groupId, stopSessionAction);
+        mgr.appendToGroup(groupId, removeLaunchAction);
     }
 	
 	@Override
 	public void dispose() {
 		stopSessionAction.dispose();
+		removeLaunchAction.dispose();
 		super.dispose();
 	}
 }

@@ -49,6 +49,10 @@ public class WebSocketChannel implements Closeable {
 
 	public void connect() throws IOException {
 		client = new WebSocketClient();
+		client.getPolicy().setMaxBinaryMessageBufferSize(1024*1024);
+		client.getPolicy().setMaxBinaryMessageSize(2*1024*1024);
+		client.getPolicy().setMaxTextMessageBufferSize(1024*1024);
+		client.getPolicy().setMaxTextMessageSize(2*1024*1024);
 		socketIO = new WebSocketIO();
 		try {
 			client.start();

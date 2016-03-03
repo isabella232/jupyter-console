@@ -35,5 +35,28 @@
             restorable="true">
       </view>
    </extension>
+   <extension
+         point="org.eclipse.ui.commands">
+      <command
+            categoryId="eu.openanalytics.jupyter"
+            defaultHandler="eu.openanalytics.jupyter.console.cmd.SubmitSelectionCmd"
+            description="Submit the selected text to the active Jupyter console"
+            id="eu.openanalytics.jupyter.console.cmd.SubmitSelectionCmd"
+            name="Submit Selection">
+      </command>
+      <category
+            id="eu.openanalytics.jupyter"
+            name="Jupyter">
+      </category>
+   </extension>
+   <extension
+         point="org.eclipse.ui.bindings">
+      <key
+            commandId="eu.openanalytics.jupyter.console.cmd.SubmitSelectionCmd"
+            contextId="org.eclipse.ui.textEditorScope"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="CTRL+R">
+      </key>
+   </extension>
 
 </plugin>

@@ -38,6 +38,7 @@ public class ImageUtil {
 		
 		value = (String) response.getValue("image/png");
 		if (value != null) {
+			value = value.replace("\n", ""); // Python's encoded images appear to include newlines.
 			byte[] bytes = Base64.decode(value.getBytes("UTF-8"));
 			ImageData[] datas = new ImageLoader().load(new ByteArrayInputStream(bytes));
 			if (datas != null && datas.length > 0) return datas[0];

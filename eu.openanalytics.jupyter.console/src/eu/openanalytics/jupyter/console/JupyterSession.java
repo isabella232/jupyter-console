@@ -22,6 +22,7 @@ import eu.openanalytics.jupyter.console.io.EventType;
 import eu.openanalytics.jupyter.console.io.SessionEvent;
 import eu.openanalytics.jupyter.console.io.SimpleStreamMonitor;
 import eu.openanalytics.jupyter.console.util.ImageUtil;
+import eu.openanalytics.jupyter.console.util.LogUtil;
 import eu.openanalytics.jupyter.console.view.GraphicsView;
 import eu.openanalytics.jupyter.wsclient.API;
 import eu.openanalytics.jupyter.wsclient.EvalResponse;
@@ -146,7 +147,9 @@ public class JupyterSession {
 					if (text != null) outputMonitors[(response.isError()) ? 1 : 0].append(text);
 				}
 			} catch (Exception e) {
-				outputMonitors[1].append("Error handling response: " + e.getMessage());
+				String msg = "Error handling response: " + e.getMessage();
+				outputMonitors[1].append(msg);
+				LogUtil.error(msg, e);
 			}
 			eventMonitor.post(new SessionEvent(EventType.SessionIdle, null));
 		}

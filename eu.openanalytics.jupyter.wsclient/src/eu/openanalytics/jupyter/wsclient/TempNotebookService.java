@@ -8,6 +8,7 @@
 package eu.openanalytics.jupyter.wsclient;
 
 import java.io.IOException;
+import java.util.Map;
 
 import eu.openanalytics.jupyter.wsclient.util.HTTPUtil;
 import eu.openanalytics.jupyter.wsclient.util.JSONUtil;
@@ -21,7 +22,11 @@ public class TempNotebookService {
 	public String spawn(String baseUrl) throws IOException {
 		String url = HTTPUtil.concat(baseUrl, SPAWN_SERVER_URL);
 		String res = HTTPUtil.post(url, null, 200);
-		String path = JSONUtil.toMap(res).get("url").toString();
+		Map<String, Object> resMap = JSONUtil.toMap(res);
+		if (resMap.containsKey("status") && "full".equals(resMap.get("status"))) {
+			throw new IOException("Failed to spawn notebook: the server appears to be temporarily out of notebooks");
+		}
+		String path = resMap.get("url").toString();
 		activeNotebookURL = HTTPUtil.concat(baseUrl, path);
 		return activeNotebookURL;
 	}

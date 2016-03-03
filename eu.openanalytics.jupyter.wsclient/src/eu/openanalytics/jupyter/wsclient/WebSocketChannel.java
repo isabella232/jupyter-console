@@ -116,8 +116,6 @@ public class WebSocketChannel implements Closeable {
 
 		@Override
 		public void onWebSocketText(String message) {
-			//TODO
-			System.out.println(message);
 			try {
 				Message msg = Japyter.JSON_OBJECT_MAPPER.readValue(message, Message.class);
 				String msgId = msg.getParentHeader().getMsgId();

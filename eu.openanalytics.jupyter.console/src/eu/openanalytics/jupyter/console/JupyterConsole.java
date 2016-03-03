@@ -28,6 +28,8 @@ public class JupyterConsole extends IOConsole {
 	private static final String CONSOLE_NAME = "Jupyter";
 	
 	private JupyterSession session;
+	private boolean running;
+	private boolean busy;
 	
 	private IDocumentListener inputListener;
 	private IOConsoleOutputStream[] outputStreams;
@@ -93,15 +95,11 @@ public class JupyterConsole extends IOConsole {
 			@Override
 			public void handle(SessionEvent event) {
 				final EventType type = event.type;
-				ConsoleUtil.inUIThread(new Runnable() {
-					public void run() {
-						if (type == EventType.SessionStarted) {
-							setName(CONSOLE_NAME + " <running " + JupyterConsole.this.session.getKernelSpec().displayName + " kernel>");
-						} else if (type == EventType.SessionStopped) {
-							setName(CONSOLE_NAME + " <terminated>");
-						}						
-					}
-				});
+				if (type == EventType.SessionStarted) running = true;
+				else if (type == EventType.SessionStopped) running = false;
+				else if (type == EventType.SessionBusy) busy = true;
+				else if (type == EventType.SessionIdle) busy = false;
+				updateConsoleName();
 			}
 		});
 	}
@@ -137,5 +135,19 @@ public class JupyterConsole extends IOConsole {
 	@Override
 	public IPageBookViewPage createPage(IConsoleView view) {
 		return new JupyterConsolePage(this, view);
+	}
+	
+	private void updateConsoleName() {
+		ConsoleUtil.inUIThread(new Runnable() {
+			public void run() {
+				if (running) {
+					String state = busy ? "working" : "ready";
+					String kernelName = JupyterConsole.this.session.getKernelSpec().displayName;
+					setName(CONSOLE_NAME + " <running " + kernelName + "> <" + state + ">");
+				} else {
+					setName(CONSOLE_NAME + " <terminated>");
+				}						
+			}
+		});
 	}
 }

@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
+	<classpathentry exported="true" kind="lib" path="lib/jetty-io-9.2.15.v20160210.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jetty-util-9.2.15.v20160210.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/websocket-api-9.2.15.v20160210.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/websocket-client-9.2.15.v20160210.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/websocket-common-9.2.15.v20160210.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/slf4j-api-1.7.12.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/slf4j-simple-1.7.12.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/commons-lang3-3.4.jar"/>
@@ -9,11 +14,6 @@
 	<classpathentry exported="true" kind="lib" path="lib/japyter-1.0-SNAPSHOT.jar" sourcepath="/japyter/target/java-gen"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
-	<classpathentry exported="true" kind="lib" path="lib/jetty-io-9.3.7.v20160115.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/jetty-util-9.3.7.v20160115.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/websocket-api-9.3.7.v20160115.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/websocket-client-9.3.7.v20160115.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/websocket-common-9.3.7.v20160115.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/gson-2.5.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/httpclient-4.5.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/httpcore-4.4.3.jar"/>

@@ -79,6 +79,7 @@ public class JupyterSession {
 	}
 	
 	public void write(String input) throws IOException {
+		eventMonitor.post(new SessionEvent(EventType.SessionBusy, null));
 		Future<EvalResponse> response = channel.eval(input);
 		asyncResponseHandler.submit(new ResponseReceiver(response));
 	}
@@ -135,6 +136,7 @@ public class JupyterSession {
 			} catch (Exception e) {
 				outputMonitors[1].append("Error handling response: " + e.getMessage());
 			}
+			eventMonitor.post(new SessionEvent(EventType.SessionIdle, null));
 		}
 	}
 }

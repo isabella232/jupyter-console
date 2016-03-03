@@ -10,12 +10,7 @@ Require-Bundle: org.eclipse.ui,
  org.apache.commons.logging
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
-Bundle-ClassPath: lib/jetty-io-9.3.7.v20160115.jar,
- lib/jetty-util-9.3.7.v20160115.jar,
- lib/websocket-api-9.3.7.v20160115.jar,
- lib/websocket-client-9.3.7.v20160115.jar,
- lib/websocket-common-9.3.7.v20160115.jar,
- lib/gson-2.5.jar,
+Bundle-ClassPath: lib/gson-2.5.jar,
  lib/httpclient-4.5.1.jar,
  lib/httpcore-4.4.3.jar,
  lib/japyter-1.0-SNAPSHOT.jar,
@@ -25,5 +20,10 @@ Bundle-ClassPath: lib/jetty-io-9.3.7.v20160115.jar,
  lib/commons-lang3-3.4.jar,
  lib/slf4j-api-1.7.12.jar,
  lib/slf4j-simple-1.7.12.jar,
+ lib/jetty-io-9.2.15.v20160210.jar,
+ lib/jetty-util-9.2.15.v20160210.jar,
+ lib/websocket-api-9.2.15.v20160210.jar,
+ lib/websocket-client-9.2.15.v20160210.jar,
+ lib/websocket-common-9.2.15.v20160210.jar,
  .
 Export-Package: eu.openanalytics.jupyter.wsclient

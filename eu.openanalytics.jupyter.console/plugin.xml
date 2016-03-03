@@ -29,6 +29,7 @@
    <extension
          point="org.eclipse.ui.views">
       <view
+            category="eu.openanalytics.jupyter"
             class="eu.openanalytics.jupyter.console.view.GraphicsView"
             icon="icons/jupyter-sq-16.png"
             id="eu.openanalytics.jupyter.console.view.GraphicsView"

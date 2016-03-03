@@ -55,7 +55,7 @@
             commandId="eu.openanalytics.jupyter.console.cmd.SubmitSelectionCmd"
             contextId="org.eclipse.ui.textEditorScope"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="CTRL+R">
+            sequence="CTRL+ENTER">
       </key>
    </extension>
 

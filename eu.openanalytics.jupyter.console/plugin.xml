@@ -30,10 +30,15 @@
          point="org.eclipse.ui.views">
       <view
             class="eu.openanalytics.jupyter.console.view.GraphicsView"
+            icon="icons/jupyter-sq-16.png"
             id="eu.openanalytics.jupyter.console.view.GraphicsView"
             name="Jupyter Graphics"
             restorable="true">
       </view>
+      <category
+            id="eu.openanalytics.jupyter"
+            name="Jupyter">
+      </category>
    </extension>
    <extension
          point="org.eclipse.ui.commands">

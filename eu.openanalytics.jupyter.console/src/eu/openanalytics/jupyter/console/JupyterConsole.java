@@ -77,10 +77,12 @@ public class JupyterConsole extends IOConsole {
 				outputStreams = new IOConsoleOutputStream[] {
 					JupyterConsole.this.newOutputStream(),
 					JupyterConsole.this.newOutputStream(),
+					JupyterConsole.this.newOutputStream(),
 					JupyterConsole.this.newOutputStream()
 				};
 				outputStreams[1].setColor(Display.getDefault().getSystemColor(SWT.COLOR_RED));
 				outputStreams[2].setColor(Display.getDefault().getSystemColor(SWT.COLOR_DARK_GREEN));
+				outputStreams[3].setColor(Display.getDefault().getSystemColor(SWT.COLOR_BLUE));
 				
 				JupyterConsole.this.getInputStream().setColor(Display.getDefault().getSystemColor(SWT.COLOR_BLUE));
 				getDocument().addDocumentListener(inputListener);
@@ -94,6 +96,7 @@ public class JupyterConsole extends IOConsole {
 				String streamName = ((SimpleStreamMonitor) monitor).getName();
 				if (streamName.equals(JupyterSession.OUTPUT_STDERR)) printErr(text);
 				else if (streamName.equals(JupyterSession.OUTPUT_CONTROL)) printControl(text);
+				else if (streamName.equals(JupyterSession.OUTPUT_ECHO)) printEcho(text);
 				else print(text);
 			}
 		});
@@ -138,7 +141,15 @@ public class JupyterConsole extends IOConsole {
             ConsolePlugin.log(e);
         }
 	}
-	
+
+	public void printEcho(String message) {
+		try {
+			if (PlatformUI.isWorkbenchRunning()) outputStreams[3].write(message + LINE_SEP);
+        } catch (IOException e) {
+            ConsolePlugin.log(e);
+        }
+	}
+
 	@Override
 	public IPageBookViewPage createPage(IConsoleView view) {
 		return new JupyterConsolePage(this, view);

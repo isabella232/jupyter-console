@@ -42,6 +42,7 @@ public class JupyterSession {
 	public static final String OUTPUT_STDOUT = "stdout";
 	public static final String OUTPUT_STDERR = "stderr";
 	public static final String OUTPUT_CONTROL = "control";
+	public static final String OUTPUT_ECHO = "inputEcho";
 	
 	private ILaunchConfiguration configuration;
 	private SimpleStreamMonitor[] outputMonitors;
@@ -58,7 +59,8 @@ public class JupyterSession {
 		this.outputMonitors = new SimpleStreamMonitor[] {
 				new SimpleStreamMonitor(OUTPUT_STDOUT),
 				new SimpleStreamMonitor(OUTPUT_STDERR),
-				new SimpleStreamMonitor(OUTPUT_CONTROL)
+				new SimpleStreamMonitor(OUTPUT_CONTROL),
+				new SimpleStreamMonitor(OUTPUT_ECHO)
 		};
 		this.eventMonitor = new EventMonitor();
 		this.asyncResponseHandler = Executors.newFixedThreadPool(1);
@@ -91,7 +93,7 @@ public class JupyterSession {
 	}
 	
 	public void write(String input, boolean echo) throws IOException {
-		if (echo) outputMonitors[0].append(input);
+		if (echo) outputMonitors[3].append(input);
 		eventMonitor.post(new SessionEvent(EventType.SessionBusy, null));
 		Future<EvalResponse> response = channel.eval(input);
 		asyncResponseHandler.submit(new ResponseReceiver(response));

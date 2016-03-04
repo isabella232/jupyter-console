@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/eu.openanalytics.jupyter_1.0.0.qualifier.jar" id="eu.openanalytics.jupyter" version="1.0.0.qualifier">
+   <feature url="features/eu.openanalytics.jupyter_0.0.1.qualifier.jar" id="eu.openanalytics.jupyter" version="0.0.1.qualifier">
       <category name="eu.openanalytics.jupyter"/>
    </feature>
    <category-def name="eu.openanalytics.jupyter" label="Jupyter Console"/>

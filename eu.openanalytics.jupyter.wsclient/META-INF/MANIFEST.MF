@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Jupyter Websocket Client
 Bundle-SymbolicName: eu.openanalytics.jupyter.wsclient
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 0.0.1.qualifier
 Bundle-Activator: eu.openanalytics.jupyter.wsclient.Activator
 Bundle-Vendor: Open Analytics
 Require-Bundle: org.eclipse.ui,

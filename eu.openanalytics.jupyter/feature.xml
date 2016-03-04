@@ -2,7 +2,7 @@
 <feature
       id="eu.openanalytics.jupyter"
       label="Jupyter"
-      version="1.0.0.qualifier"
+      version="0.0.1.qualifier"
       plugin="eu.openanalytics.jupyter.console">
 
    <description>

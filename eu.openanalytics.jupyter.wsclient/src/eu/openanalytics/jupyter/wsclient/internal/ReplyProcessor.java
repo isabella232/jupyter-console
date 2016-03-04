@@ -31,6 +31,8 @@ public class ReplyProcessor {
 	private ResponseFuture future;
 	private StringBuilder streamingText;
 	private EvalResponse response;
+	private boolean resultReceived;
+	private boolean replyReceived;
 	private boolean complete;
 	
 	private static final String MIMETYPE_TEXT = "text/plain";
@@ -39,6 +41,8 @@ public class ReplyProcessor {
 		this.future = new ResponseFuture();
 		this.streamingText = new StringBuilder();
 		this.response = new EvalResponse();
+		this.resultReceived = false;
+		this.replyReceived = false;
 		this.complete = false;
 	}
 	
@@ -49,14 +53,22 @@ public class ReplyProcessor {
 			if (bc instanceof ExecuteResult) {
 				Data_ data = ((ExecuteResult) bc).getData();
 				addValues(data.getAdditionalProperties());
+				resultReceived = true;
+				checkComplete();
 			} else if (bc instanceof DisplayData) {
 				Data data = ((DisplayData) bc).getData();
 				addValues(data.getAdditionalProperties());
+				resultReceived = true;
+				checkComplete();
 			} else if (bc instanceof Stream) {
 				String text = ((Stream) bc).getText();
 				streamingText.append(text);
+				resultReceived = true;
+				checkComplete();
 			} else if (bc instanceof Error) {
 				addError(((Error) bc).getEvalue());
+				resultReceived = true;
+				checkComplete();
 			}
 		} else if (msg.getChannel() == Channel.Shell) {
 			Class<? extends Reply> replyClass = null;
@@ -71,8 +83,8 @@ public class ReplyProcessor {
 				} else {
 					addError(((ExecuteReply) reply).getEvalue());
 				}
-				future.setResponse(response);
-				complete = true;
+				replyReceived = true;
+				checkComplete();
 			}
 		}
 	}
@@ -88,6 +100,13 @@ public class ReplyProcessor {
 	
 	public boolean isComplete() {
 		return complete;
+	}
+	
+	private void checkComplete() {
+		if (resultReceived && replyReceived) {
+			future.setResponse(response);
+			complete = true;
+		}
 	}
 	
 	private void addValues(Map<String, Object> map) {

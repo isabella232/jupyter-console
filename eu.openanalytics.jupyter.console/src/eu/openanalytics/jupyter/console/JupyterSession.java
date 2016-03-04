@@ -95,7 +95,13 @@ public class JupyterSession {
 	public void write(String input, boolean echo) throws IOException {
 		if (echo) outputMonitors[3].append(input);
 		eventMonitor.post(new SessionEvent(EventType.SessionBusy, null));
-		Future<EvalResponse> response = channel.eval(input);
+		Future<EvalResponse> response = null;
+		try {
+			response = channel.eval(input);
+		} catch (IOException e) {
+			eventMonitor.post(new SessionEvent(EventType.SessionIdle, null));
+			throw e;
+		}
 		asyncResponseHandler.submit(new ResponseReceiver(response));
 	}
 	

@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -55,7 +56,8 @@ public class WebSocketChannel implements Closeable {
 	}
 
 	public void connect() throws IOException {
-		client = new WebSocketClient();
+		SslContextFactory ssl = new SslContextFactory();
+		client = new WebSocketClient(ssl);
 		client.getPolicy().setMaxBinaryMessageBufferSize(1024*1024);
 		client.getPolicy().setMaxBinaryMessageSize(2*1024*1024);
 		client.getPolicy().setMaxTextMessageBufferSize(1024*1024);
@@ -81,7 +83,7 @@ public class WebSocketChannel implements Closeable {
 	}
 
 	public Future<EvalResponse> eval(String code) throws IOException {
-		if (socketIO == null) throw new IOException("Websocket is not ready");
+		if (socketIO == null || socketIO.session == null || socketIO.session.getRemote() == null) throw new IOException("Websocket is not ready");
 		return socketIO.submit(code);
 	}
 	

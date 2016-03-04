@@ -10,6 +10,7 @@ package eu.openanalytics.jupyter.console.util;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -103,8 +104,7 @@ public class SelectKernelDialog extends TitleAreaDialog {
 		tableViewer.addSelectionChangedListener(new ISelectionChangedListener() {
 			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
-				StructuredSelection sel = (StructuredSelection) tableViewer.getSelection();
-				if (!sel.isEmpty()) selectedSpec = (KernelSpec) sel.getFirstElement();
+				kernelSelected();
 			}
 		});
 		tableViewer.addDoubleClickListener(new IDoubleClickListener() {
@@ -116,11 +116,25 @@ public class SelectKernelDialog extends TitleAreaDialog {
 		
 		setTitle("Select Kernelspec");
 		setMessage("Select a kernelspec from the list of available specs below.");
-		
+
 		return area;
+	}
+	
+	@Override
+	protected void createButtonsForButtonBar(Composite parent) {
+		super.createButtonsForButtonBar(parent);
+		getButton(IDialogConstants.OK_ID).setEnabled(false);
 	}
 	
 	public KernelSpec getSelectedSpec() {
 		return selectedSpec;
+	}
+	
+	private void kernelSelected() {
+		StructuredSelection sel = (StructuredSelection) tableViewer.getSelection();
+		if (!sel.isEmpty()) {
+			selectedSpec = (KernelSpec) sel.getFirstElement();
+			getButton(IDialogConstants.OK_ID).setEnabled(true);
+		}
 	}
 }

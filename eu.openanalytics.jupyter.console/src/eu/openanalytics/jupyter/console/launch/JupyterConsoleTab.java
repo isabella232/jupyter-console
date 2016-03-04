@@ -108,6 +108,10 @@ public class JupyterConsoleTab extends AbstractLaunchConfigurationTab {
 
 	@Override
 	public void performApply(ILaunchConfigurationWorkingCopy configuration) {
+		connectionMethod = connectionMethodCmb.getText();
+		connectionUrl = connectionUrlTxt.getText();
+		kernelName = kernelNameTxt.getText();
+		
 		configuration.setAttribute(JupyterSession.CONNECTION_METHOD, connectionMethod);
 		configuration.setAttribute(JupyterSession.CONNECTION_URL, connectionUrl);
 		configuration.setAttribute(JupyterSession.KERNEL_NAME, kernelName);
@@ -127,7 +131,7 @@ public class JupyterConsoleTab extends AbstractLaunchConfigurationTab {
 
 	private void selectKernel() {
 		try {
-			String nbUrl = API.getNotebookService().getNotebook(connectionUrl);
+			String nbUrl = API.getNotebookService().getNotebook(connectionUrlTxt.getText());
 			KernelSpec[] specs = API.getKernelService().listAvailableKernels(nbUrl);
 			SelectKernelDialog dialog = new SelectKernelDialog(getShell(), specs);
 			if (dialog.open() == Window.OK) {

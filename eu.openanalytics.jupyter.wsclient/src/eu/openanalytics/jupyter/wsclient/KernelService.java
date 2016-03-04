@@ -71,6 +71,7 @@ public class KernelService {
 	public WebSocketChannel createChannel(String baseUrl, String kernelId) {
 		String url = HTTPUtil.concat(baseUrl, KERNEL_SERVICE_URL, kernelId, "/channels");
 		url = url.replace("http://", "ws://");
+		url = url.replace("https://", "wss://");
 		WebSocketChannel channel = new WebSocketChannel(url);
 		return channel;
 	}

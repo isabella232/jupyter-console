@@ -9,6 +9,7 @@ package eu.openanalytics.jupyter.console.io;
 
 public enum EventType {
 
+	SessionStarting,
 	SessionStarted,
 	SessionStopped,
 

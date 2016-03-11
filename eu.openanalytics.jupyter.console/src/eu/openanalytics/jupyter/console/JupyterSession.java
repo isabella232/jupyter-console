@@ -8,26 +8,34 @@
 package eu.openanalytics.jupyter.console;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.IStreamListener;
 import org.eclipse.swt.graphics.ImageData;
 
+import eu.openanalytics.japyter.model.gen.Broadcast;
+import eu.openanalytics.japyter.model.gen.Data;
+import eu.openanalytics.japyter.model.gen.Data_;
+import eu.openanalytics.japyter.model.gen.DisplayData;
+import eu.openanalytics.japyter.model.gen.Error;
+import eu.openanalytics.japyter.model.gen.ExecuteResult;
+import eu.openanalytics.japyter.model.gen.Status;
+import eu.openanalytics.japyter.model.gen.Status.ExecutionState;
+import eu.openanalytics.japyter.model.gen.Stream;
 import eu.openanalytics.jupyter.console.io.EventMonitor;
 import eu.openanalytics.jupyter.console.io.EventType;
+import eu.openanalytics.jupyter.console.io.IEventListener;
 import eu.openanalytics.jupyter.console.io.SessionEvent;
 import eu.openanalytics.jupyter.console.io.SimpleStreamMonitor;
 import eu.openanalytics.jupyter.console.util.ImageUtil;
-import eu.openanalytics.jupyter.console.util.LogUtil;
 import eu.openanalytics.jupyter.console.view.GraphicsView;
 import eu.openanalytics.jupyter.wsclient.API;
-import eu.openanalytics.jupyter.wsclient.EvalResponse;
 import eu.openanalytics.jupyter.wsclient.KernelService.KernelSpec;
+import eu.openanalytics.jupyter.wsclient.KernelService.SessionSpec;
 import eu.openanalytics.jupyter.wsclient.WebSocketChannel;
+import eu.openanalytics.jupyter.wsclient.response.BaseMessageCallback;
 
 public class JupyterSession {
 
@@ -36,7 +44,7 @@ public class JupyterSession {
 	public static final String KERNEL_NAME = "KERNEL_NAME";
 	
 	public static final String DEFAULT_CONNECTION_METHOD = "tmpnb";
-	public static final String DEFAULT_CONNECTION_URL = "http://tmpnb.openanalytics.eu:8000";
+	public static final String DEFAULT_CONNECTION_URL = "https://tmpnb.org";
 	public static final String DEFAULT_KERNEL_NAME = "python3";
 	
 	public static final String OUTPUT_STDOUT = "stdout";
@@ -47,11 +55,11 @@ public class JupyterSession {
 	private ILaunchConfiguration configuration;
 	private SimpleStreamMonitor[] outputMonitors;
 	private EventMonitor eventMonitor;
-	private ExecutorService asyncResponseHandler;
 	
 	private String nbUrl;
 	private String kernelId;
 	private KernelSpec kernelSpec;
+	
 	private WebSocketChannel channel;
 	
 	public JupyterSession(ILaunchConfiguration configuration) {
@@ -63,7 +71,6 @@ public class JupyterSession {
 				new SimpleStreamMonitor(OUTPUT_ECHO)
 		};
 		this.eventMonitor = new EventMonitor();
-		this.asyncResponseHandler = Executors.newFixedThreadPool(1);
 	}
 	
 	public void connect() throws IOException, CoreException {
@@ -77,10 +84,12 @@ public class JupyterSession {
 		kernelId = API.getKernelService().launchKernel(nbUrl, kernelName);
 		outputMonitors[2].append(kernelSpec.displayName + " kernel launched, id: " + kernelId);
 		
-		channel = API.getKernelService().createChannel(nbUrl, kernelId);
+		eventMonitor.post(new SessionEvent(EventType.SessionStarting, null));
+		SessionSpec spec = new SessionSpec();
+		spec.kernelId = kernelId;
+		channel = API.getKernelService().createChannel(nbUrl, spec, new MessageCallback());
 		channel.connect();
 		outputMonitors[2].append("Session started. Enjoy!");
-		
 		eventMonitor.post(new SessionEvent(EventType.SessionStarted, null));
 	}
 	
@@ -95,14 +104,12 @@ public class JupyterSession {
 	public void write(String input, boolean echo) throws IOException {
 		if (echo) outputMonitors[3].append(input);
 		eventMonitor.post(new SessionEvent(EventType.SessionBusy, null));
-		Future<EvalResponse> response = null;
 		try {
-			response = channel.eval(input);
+			channel.submit(input);
 		} catch (IOException e) {
 			eventMonitor.post(new SessionEvent(EventType.SessionIdle, null));
 			throw e;
 		}
-		asyncResponseHandler.submit(new ResponseReceiver(response));
 	}
 	
 	public void stop() throws IOException {
@@ -117,8 +124,12 @@ public class JupyterSession {
 		for (SimpleStreamMonitor outputMonitor: outputMonitors) outputMonitor.removeListener(listener);
 	}
 	
-	public EventMonitor getEventMonitor() {
-		return eventMonitor;
+	public void addEventListener(IEventListener listener) {
+		eventMonitor.addListener(listener);
+	}
+	
+	public void removeEventListener(IEventListener listener) {
+		eventMonitor.removeListener(listener);
 	}
 	
 	/*
@@ -133,33 +144,49 @@ public class JupyterSession {
 		for (SimpleStreamMonitor outputMonitor: outputMonitors) outputMonitor.dispose();
 		eventMonitor.post(new SessionEvent(EventType.SessionStopped, null));
 		eventMonitor.dispose();
-		asyncResponseHandler.shutdown();
 	}
 	
-	private class ResponseReceiver implements Runnable {
+	private class MessageCallback extends BaseMessageCallback {
 		
-		private Future<EvalResponse> futureResponse;
-		
-		public ResponseReceiver(Future<EvalResponse> futureResponse) {
-			this.futureResponse = futureResponse;
+		@Override
+		public void onPubResult(Broadcast bc) {
+			if (bc instanceof Status) {
+				ExecutionState state = ((Status) bc).getExecutionState();
+				if (state == ExecutionState.BUSY) eventMonitor.post(new SessionEvent(EventType.SessionBusy, null));
+				if (state == ExecutionState.IDLE) eventMonitor.post(new SessionEvent(EventType.SessionIdle, null));
+			} else if (bc instanceof ExecuteResult) {
+				Data_ data = ((ExecuteResult) bc).getData();
+				processTextOrImage(data.getAdditionalProperties());
+			} else if (bc instanceof DisplayData) {
+				Data data = ((DisplayData) bc).getData();
+				processTextOrImage(data.getAdditionalProperties());
+			} else if (bc instanceof Stream) {
+				String text = ((Stream) bc).getText();
+				if (text != null) outputMonitors[0].append(text);
+			} else if (bc instanceof Error) {
+				String text = ((Error) bc).getEvalue();
+				if (text != null) outputMonitors[1].append(text);
+			}
 		}
 		
 		@Override
-		public void run() {
+		public void onChannelError(Throwable cause) {
+			outputMonitors[1].append("Websocket channel error: " + cause.getMessage());
+			try { stopSession(); } catch (IOException e) {}
+		}
+		
+		private void processTextOrImage(Map<String, Object> response) {
 			try {
-				EvalResponse response = futureResponse.get();
 				ImageData imageData = ImageUtil.getImage(response);
-				if (imageData != null) GraphicsView.openWith(imageData);
-				else {
-					String text = (String) response.getValue("text/plain");
-					if (text != null) outputMonitors[(response.isError()) ? 1 : 0].append(text);
+				if (imageData != null) {
+					GraphicsView.openWith(imageData);
+					return;
 				}
-			} catch (Exception e) {
-				String msg = "Error handling response: " + e.getMessage();
-				outputMonitors[1].append(msg);
-				LogUtil.error(msg, e);
+			} catch (IOException e) {
+				outputMonitors[1].append("Failed to render image: " + e.getMessage());
 			}
-			eventMonitor.post(new SessionEvent(EventType.SessionIdle, null));
+			String text = (String) response.get("text/plain");
+			if (text != null) outputMonitors[0].append(text);
 		}
 	}
 }

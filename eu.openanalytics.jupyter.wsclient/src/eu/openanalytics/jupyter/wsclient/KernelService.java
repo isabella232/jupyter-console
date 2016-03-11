@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
+import eu.openanalytics.jupyter.wsclient.response.IMessageCallback;
 import eu.openanalytics.jupyter.wsclient.util.HTTPUtil;
 import eu.openanalytics.jupyter.wsclient.util.JSONUtil;
 
@@ -68,11 +70,15 @@ public class KernelService {
 		HTTPUtil.delete(url, 204);
 	}
 	
-	public WebSocketChannel createChannel(String baseUrl, String kernelId) {
-		String url = HTTPUtil.concat(baseUrl, KERNEL_SERVICE_URL, kernelId, "/channels");
+	public WebSocketChannel createChannel(String baseUrl, SessionSpec sessionSpec, IMessageCallback callback) {
+		String url = HTTPUtil.concat(baseUrl, KERNEL_SERVICE_URL, sessionSpec.kernelId, "/channels");
 		url = url.replace("http://", "ws://");
 		url = url.replace("https://", "wss://");
-		WebSocketChannel channel = new WebSocketChannel(url);
+		
+		if (sessionSpec.sessionId == null || sessionSpec.sessionId.isEmpty()) sessionSpec.sessionId = UUID.randomUUID().toString();
+		if (sessionSpec.userName == null || sessionSpec.userName.isEmpty()) sessionSpec.userName = "userName";
+		
+		WebSocketChannel channel = new WebSocketChannel(url, sessionSpec, callback);
 		return channel;
 	}
 	
@@ -80,5 +86,11 @@ public class KernelService {
 		public String name;
 		public String displayName;
 		public String language;
+	}
+	
+	public static class SessionSpec {
+		public String kernelId;
+		public String userName;
+		public String sessionId;
 	}
 }

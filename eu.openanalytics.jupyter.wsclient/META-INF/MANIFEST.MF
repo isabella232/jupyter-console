@@ -26,4 +26,6 @@ Bundle-ClassPath: lib/gson-2.5.jar,
  lib/websocket-client-9.2.15.v20160210.jar,
  lib/websocket-common-9.2.15.v20160210.jar,
  .
-Export-Package: eu.openanalytics.jupyter.wsclient
+Export-Package: eu.openanalytics.japyter.model.gen,
+ eu.openanalytics.jupyter.wsclient,
+ eu.openanalytics.jupyter.wsclient.response

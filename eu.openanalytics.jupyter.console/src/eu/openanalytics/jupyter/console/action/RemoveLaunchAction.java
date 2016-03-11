@@ -43,7 +43,7 @@ public class RemoveLaunchAction extends Action {
 				}
 			}
 		};
-		this.console.getSession().getEventMonitor().addListener(sessionListener);
+		this.console.getSession().addEventListener(sessionListener);
 	}
 
 	@Override
@@ -53,7 +53,7 @@ public class RemoveLaunchAction extends Action {
 	}
 
 	public void dispose() {
-		console.getSession().getEventMonitor().removeListener(sessionListener);
+		console.getSession().removeEventListener(sessionListener);
 		console = null;
 	}
 }

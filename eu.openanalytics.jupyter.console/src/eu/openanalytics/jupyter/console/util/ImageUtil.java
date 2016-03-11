@@ -13,6 +13,7 @@ import java.awt.image.DataBufferInt;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 
 import org.eclipse.core.internal.preferences.Base64;
 import org.eclipse.swt.SWT;
@@ -27,16 +28,14 @@ import com.kitfox.svg.SVGCache;
 import com.kitfox.svg.SVGDiagram;
 import com.kitfox.svg.SVGException;
 
-import eu.openanalytics.jupyter.wsclient.EvalResponse;
-
 @SuppressWarnings("restriction")
 public class ImageUtil {
 
-	public static ImageData getImage(EvalResponse response) throws IOException {
-		String value = (String) response.getValue("image/svg+xml");
+	public static ImageData getImage(Map<String, Object> response) throws IOException {
+		String value = (String) response.get("image/svg+xml");
 		if (value != null) return convertSVG(value);
 		
-		value = (String) response.getValue("image/png");
+		value = (String) response.get("image/png");
 		if (value != null) {
 			value = value.replace("\n", ""); // Python's encoded images appear to include newlines.
 			byte[] bytes = Base64.decode(value.getBytes("UTF-8"));

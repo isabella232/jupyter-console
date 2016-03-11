@@ -46,7 +46,7 @@ public class StopSessionAction extends Action {
 				}
 			}
 		};
-		this.console.getSession().getEventMonitor().addListener(sessionListener);
+		this.console.getSession().addEventListener(sessionListener);
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public class StopSessionAction extends Action {
 	}
 
 	public void dispose() {
-		console.getSession().getEventMonitor().removeListener(sessionListener);
+		console.getSession().removeEventListener(sessionListener);
 		console = null;
 	}
 }

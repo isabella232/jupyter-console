@@ -5,24 +5,16 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package eu.openanalytics.jupyter.wsclient;
+package eu.openanalytics.jupyter.wsclient.response;
 
-public class API {
+import eu.openanalytics.japyter.model.gen.Broadcast;
+import eu.openanalytics.japyter.model.gen.Reply;
 
-	private static KernelService kernelService;
-	private static TempNotebookService notebookService;
+public interface IMessageCallback {
 	
-	static {
-		kernelService = new KernelService();
-		notebookService = new TempNotebookService();
-	}
+	public void onPubResult(Broadcast broadcast);
 	
-	public static KernelService getKernelService() {
-		return kernelService;
-	}
+	public void onShellReply(Reply reply);
 	
-	public static TempNotebookService getNotebookService() {
-		return notebookService;
-	}
-	
+	public void onChannelError(Throwable cause);
 }

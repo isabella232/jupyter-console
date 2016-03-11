@@ -35,8 +35,6 @@ public class JupyterConsole extends IOConsole {
 	private static final String CONSOLE_NAME = "Jupyter";
 	
 	private JupyterSession session;
-	private boolean running;
-	private boolean busy;
 	
 	private IDocumentListener inputListener;
 	private IOConsoleOutputStream[] outputStreams;
@@ -101,15 +99,21 @@ public class JupyterConsole extends IOConsole {
 			}
 		});
 		
-		session.getEventMonitor().addListener(new IEventListener() {
+		session.addEventListener(new IEventListener() {
 			@Override
-			public void handle(SessionEvent event) {
-				final EventType type = event.type;
-				if (type == EventType.SessionStarted) running = true;
-				else if (type == EventType.SessionStopped) running = false;
-				else if (type == EventType.SessionBusy) busy = true;
-				else if (type == EventType.SessionIdle) busy = false;
-				updateConsoleName();
+			public void handle(final SessionEvent event) {
+				ConsoleUtil.inUIThread(new Runnable() {
+					public void run() {
+						String state = "";
+						if (event.type == EventType.SessionStarting) state = "starting";
+						else if (event.type == EventType.SessionStarted) state = "ready";
+						else if (event.type == EventType.SessionStopped) state = "terminated";
+						else if (event.type == EventType.SessionBusy) state = "working";
+						else if (event.type == EventType.SessionIdle) state = "ready";
+						String kernelName = JupyterConsole.this.session.getKernelSpec().displayName;
+						setName(CONSOLE_NAME + " <" + kernelName + "> <" + state + ">");
+					}
+				});
 			}
 		});
 	}
@@ -153,19 +157,5 @@ public class JupyterConsole extends IOConsole {
 	@Override
 	public IPageBookViewPage createPage(IConsoleView view) {
 		return new JupyterConsolePage(this, view);
-	}
-	
-	private void updateConsoleName() {
-		ConsoleUtil.inUIThread(new Runnable() {
-			public void run() {
-				if (running) {
-					String state = busy ? "working" : "ready";
-					String kernelName = JupyterConsole.this.session.getKernelSpec().displayName;
-					setName(CONSOLE_NAME + " <" + kernelName + "> <" + state + ">");
-				} else {
-					setName(CONSOLE_NAME + " <terminated>");
-				}						
-			}
-		});
 	}
 }

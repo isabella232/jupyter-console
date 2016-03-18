@@ -10,16 +10,9 @@
 		<tycho.version>0.24.0</tycho.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
-	
-	<repositories>
-		<repository>
-			<id>mars</id>
-			<url>http://download.eclipse.org/releases/mars</url>
-			<layout>p2</layout>
-		</repository>
-	</repositories>
-	
+
 	<modules>
+		<module>eu.openanalytics.jupyter.targetdef</module>
 		<module>eu.openanalytics.jupyter</module>
 		<module>eu.openanalytics.jupyter.console</module>
 		<module>eu.openanalytics.jupyter.wsclient</module>
@@ -34,12 +27,26 @@
 				<version>${tycho.version}</version>
 				<extensions>true</extensions>
 			</plugin>
-
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-p2-repository-plugin</artifactId>
+				<version>${tycho.version}</version>
+				<configuration>
+					<includeAllDependencies>true</includeAllDependencies>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>target-platform-configuration</artifactId>
 				<version>${tycho.version}</version>
 				<configuration>
+					<target>
+						<artifact>
+							<groupId>eu.openanalytics.jupyter</groupId>
+							<artifactId>eu.openanalytics.jupyter.targetdef</artifactId>
+							<version>0.0.1-SNAPSHOT</version>
+						</artifact>
+					</target>
 					<environments>
 						<environment>
 							<os>linux</os>
@@ -67,15 +74,6 @@
 							<arch>x86_64</arch>
 						</environment>
 					</environments>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>org.eclipse.tycho</groupId>
-				<artifactId>tycho-p2-repository-plugin</artifactId>
-				<version>${tycho.version}</version>
-				<configuration>
-					<includeAllDependencies>true</includeAllDependencies>
 				</configuration>
 			</plugin>
 		</plugins>

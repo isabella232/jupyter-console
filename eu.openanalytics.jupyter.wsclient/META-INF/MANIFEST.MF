@@ -7,19 +7,18 @@ Bundle-Activator: eu.openanalytics.jupyter.wsclient.Activator
 Bundle-Vendor: Open Analytics
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
- org.apache.commons.logging
+ org.apache.commons.logging,
+ org.apache.commons.lang3;bundle-version="3.1.0",
+ com.google.gson;bundle-version="2.2.4",
+ org.apache.httpcomponents.httpclient;bundle-version="4.3.6",
+ org.apache.httpcomponents.httpcore;bundle-version="4.3.3",
+ com.fasterxml.jackson.core.jackson-annotations;bundle-version="2.5.0",
+ com.fasterxml.jackson.core.jackson-core;bundle-version="2.5.0",
+ com.fasterxml.jackson.core.jackson-databind;bundle-version="2.5.0",
+ org.slf4j.api;bundle-version="1.7.2"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
-Bundle-ClassPath: lib/gson-2.5.jar,
- lib/httpclient-4.5.1.jar,
- lib/httpcore-4.4.3.jar,
- lib/japyter-1.0-SNAPSHOT.jar,
- lib/jackson-annotations-2.5.0.jar,
- lib/jackson-core-2.5.3.jar,
- lib/jackson-databind-2.5.3.jar,
- lib/commons-lang3-3.4.jar,
- lib/slf4j-api-1.7.12.jar,
- lib/slf4j-simple-1.7.12.jar,
+Bundle-ClassPath: lib/japyter-1.0-SNAPSHOT.jar,
  lib/jetty-io-9.2.15.v20160210.jar,
  lib/jetty-util-9.2.15.v20160210.jar,
  lib/websocket-api-9.2.15.v20160210.jar,

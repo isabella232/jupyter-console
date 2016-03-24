@@ -43,6 +43,10 @@
    </extension>
    <extension
          point="org.eclipse.ui.commands">
+      <category
+            id="eu.openanalytics.jupyter"
+            name="Jupyter">
+      </category>
       <command
             categoryId="eu.openanalytics.jupyter"
             defaultHandler="eu.openanalytics.jupyter.console.cmd.SubmitSelectionCmd"
@@ -50,10 +54,34 @@
             id="eu.openanalytics.jupyter.console.cmd.SubmitSelectionCmd"
             name="Submit Selection">
       </command>
-      <category
-            id="eu.openanalytics.jupyter"
-            name="Jupyter">
-      </category>
+      <command
+            categoryId="eu.openanalytics.jupyter"
+            defaultHandler="eu.openanalytics.jupyter.console.cmd.RemoveLaunchCmd"
+            description="Remove the terminated launch"
+            id="eu.openanalytics.jupyter.console.cmd.RemoveLaunchCmd"
+            name="Remove Launch">
+      </command>
+      <command
+            categoryId="eu.openanalytics.jupyter"
+            defaultHandler="eu.openanalytics.jupyter.console.cmd.StopSessionCmd"
+            description="Stop the active session"
+            id="eu.openanalytics.jupyter.console.cmd.StopSessionCmd"
+            name="Stop Session">
+      </command>
+      <command
+            categoryId="eu.openanalytics.jupyter"
+            defaultHandler="eu.openanalytics.jupyter.console.cmd.SwitchKernelCmd"
+            description="Switch to another kernel"
+            id="eu.openanalytics.jupyter.console.cmd.SwitchKernelCmd"
+            name="Switch Kernel">
+      </command>
+      <command
+            categoryId="eu.openanalytics.jupyter"
+            defaultHandler="eu.openanalytics.jupyter.console.cmd.RestartKernelCmd"
+            description="Restart the current kernel"
+            id="eu.openanalytics.jupyter.console.cmd.RestartKernelCmd"
+            name="Restart Kernel">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.bindings">

@@ -7,6 +7,7 @@
  *******************************************************************************/
 package eu.openanalytics.jupyter.console.util;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -24,11 +25,13 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.ViewerCell;
+import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 
+import eu.openanalytics.jupyter.wsclient.API;
 import eu.openanalytics.jupyter.wsclient.KernelService.KernelSpec;
 
 public class SelectKernelDialog extends TitleAreaDialog {
@@ -49,6 +52,15 @@ public class SelectKernelDialog extends TitleAreaDialog {
 		});
 	}
 
+	public static KernelSpec open(String nbUrl, Shell shell) throws IOException {
+		KernelSpec[] specs = API.getKernelService().listAvailableKernels(nbUrl);
+		SelectKernelDialog dialog = new SelectKernelDialog(shell, specs);
+		if (dialog.open() == Window.OK) {
+			return dialog.getSelectedSpec();
+		}
+		return null;
+	}
+	
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);

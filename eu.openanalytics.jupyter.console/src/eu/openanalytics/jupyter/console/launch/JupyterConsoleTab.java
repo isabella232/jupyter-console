@@ -16,7 +16,6 @@ import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTab;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -132,10 +131,9 @@ public class JupyterConsoleTab extends AbstractLaunchConfigurationTab {
 	private void selectKernel() {
 		try {
 			String nbUrl = API.getNotebookService().getNotebook(connectionUrlTxt.getText());
-			KernelSpec[] specs = API.getKernelService().listAvailableKernels(nbUrl);
-			SelectKernelDialog dialog = new SelectKernelDialog(getShell(), specs);
-			if (dialog.open() == Window.OK) {
-				kernelName = dialog.getSelectedSpec().name;
+			KernelSpec selectedKernel = SelectKernelDialog.open(nbUrl, getShell());
+			if (selectedKernel != null) {
+				kernelName = selectedKernel.name;
 				kernelNameTxt.setText(kernelName);
 				setDirty(true);
 				updateLaunchConfigurationDialog();

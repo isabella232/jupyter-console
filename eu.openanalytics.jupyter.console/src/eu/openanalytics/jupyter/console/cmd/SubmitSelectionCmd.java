@@ -20,7 +20,6 @@ import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.console.IConsole;
 
 import eu.openanalytics.jupyter.console.JupyterConsole;
 import eu.openanalytics.jupyter.console.util.ConsoleUtil;
@@ -40,6 +39,7 @@ public class SubmitSelectionCmd extends AbstractHandler {
 			ISelectionProvider provider = editor.getEditorSite().getSelectionProvider();
 			if (provider != null) selection = provider.getSelection();
 		}
+		
 		String text = null;
 		if (selection instanceof TextSelection) {
 			TextSelection textSelection = (TextSelection) selection;
@@ -62,11 +62,11 @@ public class SubmitSelectionCmd extends AbstractHandler {
 
 		// Submit the text to the active console
 		if (text != null && !text.isEmpty()) {
-			IConsole console = ConsoleUtil.getActiveConsole();
-			if (console instanceof JupyterConsole) {
+			JupyterConsole console = ConsoleUtil.getActiveJupyterConsole();
+			if (console != null) {
 				try {
 					text = text.replace("\r", "");
-					((JupyterConsole) console).getSession().write(text, true);
+					console.getSession().write(text, true);
 				} catch (IOException e) {
 					LogUtil.error("Failed to submit text to console", e);
 				}

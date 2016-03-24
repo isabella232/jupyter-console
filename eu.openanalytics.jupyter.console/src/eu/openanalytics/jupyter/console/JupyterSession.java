@@ -9,11 +9,13 @@ package eu.openanalytics.jupyter.console;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.IStreamListener;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.widgets.Display;
 
 import eu.openanalytics.japyter.model.gen.Broadcast;
 import eu.openanalytics.japyter.model.gen.Data;
@@ -29,7 +31,9 @@ import eu.openanalytics.jupyter.console.io.EventType;
 import eu.openanalytics.jupyter.console.io.IEventListener;
 import eu.openanalytics.jupyter.console.io.SessionEvent;
 import eu.openanalytics.jupyter.console.io.SimpleStreamMonitor;
+import eu.openanalytics.jupyter.console.util.ConsoleUtil;
 import eu.openanalytics.jupyter.console.util.ImageUtil;
+import eu.openanalytics.jupyter.console.util.SelectKernelDialog;
 import eu.openanalytics.jupyter.console.view.GraphicsView;
 import eu.openanalytics.jupyter.wsclient.API;
 import eu.openanalytics.jupyter.wsclient.KernelService.KernelSpec;
@@ -59,6 +63,7 @@ public class JupyterSession {
 	private String nbUrl;
 	private String kernelId;
 	private KernelSpec kernelSpec;
+	private SessionSpec sessionSpec;
 	
 	private WebSocketChannel channel;
 	
@@ -80,16 +85,10 @@ public class JupyterSession {
 		nbUrl = API.getNotebookService().getNotebook(baseUrl);
 		outputMonitors[2].append("Notebook server spawned: " + nbUrl);
 		
-		kernelSpec = API.getKernelService().getKernelSpec(nbUrl, kernelName);
-		kernelId = API.getKernelService().launchKernel(nbUrl, kernelName);
-		outputMonitors[2].append(kernelSpec.displayName + " kernel launched, id: " + kernelId);
-		
 		eventMonitor.post(new SessionEvent(EventType.SessionStarting, null));
-		SessionSpec spec = new SessionSpec();
-		spec.kernelId = kernelId;
-		channel = API.getKernelService().createChannel(nbUrl, spec, new MessageCallback());
-		channel.connect();
-		outputMonitors[2].append("Session started. Enjoy!");
+		sessionSpec = new SessionSpec();
+		startKernel(kernelName);
+		outputMonitors[2].append(kernelSpec.displayName + " kernel launched");
 		eventMonitor.post(new SessionEvent(EventType.SessionStarted, null));
 	}
 	
@@ -116,6 +115,35 @@ public class JupyterSession {
 		stopSession();
 	}
 	
+	public void restartKernel() throws IOException {
+		stopKernel();
+		eventMonitor.post(new SessionEvent(EventType.SessionStarting, null));
+		startKernel(kernelSpec.name);
+		outputMonitors[2].append(kernelSpec.displayName + " kernel restarted");
+		eventMonitor.post(new SessionEvent(EventType.SessionStarted, null));
+	}
+	
+	public void switchKernel() throws IOException {
+		KernelSpec newKernel = null;
+		try {
+			newKernel = ConsoleUtil.inUIThread(new Callable<KernelSpec>() {
+				@Override
+				public KernelSpec call() throws Exception {
+					return SelectKernelDialog.open(nbUrl, Display.getDefault().getActiveShell());
+				}
+			});
+		} catch (Exception e) {
+			throw new IOException(e);
+		}
+		if (newKernel == null) return;
+		
+		stopKernel();
+		eventMonitor.post(new SessionEvent(EventType.SessionStarting, null));
+		startKernel(newKernel.name);
+		outputMonitors[2].append("Kernel switched to " + newKernel.displayName);
+		eventMonitor.post(new SessionEvent(EventType.SessionStarted, null));
+	}
+	
 	public void addStreamListener(IStreamListener listener) {
 		for (SimpleStreamMonitor outputMonitor: outputMonitors) outputMonitor.addListener(listener);
 	}
@@ -138,12 +166,24 @@ public class JupyterSession {
 	 */
 	
 	private void stopSession() throws IOException {
-		channel.close();
-		API.getKernelService().stopKernel(nbUrl, kernelId);
+		stopKernel();
 		outputMonitors[2].append("Session stopped.");
 		for (SimpleStreamMonitor outputMonitor: outputMonitors) outputMonitor.dispose();
 		eventMonitor.post(new SessionEvent(EventType.SessionStopped, null));
 		eventMonitor.dispose();
+	}
+	
+	private void startKernel(String kernelName) throws IOException {
+		kernelSpec = API.getKernelService().getKernelSpec(nbUrl, kernelName);
+		kernelId = API.getKernelService().launchKernel(nbUrl, kernelName);
+		sessionSpec.kernelId = kernelId;
+		channel = API.getKernelService().createChannel(nbUrl, sessionSpec, new MessageCallback());
+		channel.connect();
+	}
+	
+	private void stopKernel() throws IOException {
+		channel.close();
+		API.getKernelService().stopKernel(nbUrl, kernelId);
 	}
 	
 	private class MessageCallback extends BaseMessageCallback {

@@ -28,6 +28,7 @@ import eu.openanalytics.jupyter.console.io.IEventListener;
 import eu.openanalytics.jupyter.console.io.SessionEvent;
 import eu.openanalytics.jupyter.console.io.SimpleStreamMonitor;
 import eu.openanalytics.jupyter.console.util.ConsoleUtil;
+import eu.openanalytics.jupyter.wsclient.KernelService.KernelSpec;
 
 public class JupyterConsole extends IOConsole {
 
@@ -110,8 +111,9 @@ public class JupyterConsole extends IOConsole {
 						else if (event.type == EventType.SessionStopped) state = "terminated";
 						else if (event.type == EventType.SessionBusy) state = "working";
 						else if (event.type == EventType.SessionIdle) state = "ready";
-						String kernelName = JupyterConsole.this.session.getKernelSpec().displayName;
-						setName(CONSOLE_NAME + " <" + kernelName + "> <" + state + ">");
+						KernelSpec kernelSpec = JupyterConsole.this.session.getKernelSpec();
+						String kernelName = kernelSpec == null ? " " : " <" + kernelSpec.displayName + "> ";
+						setName(CONSOLE_NAME + kernelName + "<" + state + ">");
 					}
 				});
 			}
